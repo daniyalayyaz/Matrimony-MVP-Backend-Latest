@@ -8,65 +8,66 @@ const router = express.Router();
 
 // Router for getting all online users
 const OnlineUser = async (req, res) => {
-  const userId  = req.body.id;
+  const userId = req.body.id;
   let userPrefrence;
   try {
-    let pref = await preference.find({userId: userId});
+    let pref = await preference.find({ userId: userId });
     userPrefrence = pref[0]._doc;
     console.log(userPrefrence)
 
     const user = await userProfiles.find({
       $or: [
-        { age:userPrefrence.age },
-        { religious:userPrefrence.religious },
-        { nationality:userPrefrence.otherNationalities },
-        {professional:userPrefrence.profession},
-        {religiousStatus:userPrefrence.religiousStatus},
-        {caste:userPrefrence.caste},
-        {clan:userPrefrence.clan},
-        {income:userPrefrence.monthlyIncome},
-        {montherTonque:userPrefrence.montherTonque},
-        {looks:userPrefrence.looks},
-        {complexion:userPrefrence.complexion},
-        {build:userPrefrence.build},
-        {nationality:userPrefrence.country},
-        {socialEconomic:userPrefrence.socioeconomicStatus},
-        {siblingsCountBrothers:userPrefrence.BrotherCount},
-        {siblingsCountSisters:userPrefrence.SisterCount},
+        { age: userPrefrence.age },
+        { religious: userPrefrence.religious },
+        { nationality: userPrefrence.otherNationalities },
+        { professional: userPrefrence.profession },
+        { religiousStatus: userPrefrence.religiousStatus },
+        { caste: userPrefrence.caste },
+        { clan: userPrefrence.clan },
+        { income: userPrefrence.monthlyIncome },
+        { montherTonque: userPrefrence.montherTonque },
+        { looks: userPrefrence.looks },
+        { complexion: userPrefrence.complexion },
+        { build: userPrefrence.build },
+        { nationality: userPrefrence.country },
+        { socialEconomic: userPrefrence.socioeconomicStatus },
+        { siblingsCountBrothers: userPrefrence.BrotherCount },
+        { siblingsCountSisters: userPrefrence.SisterCount },
       ],
     }
 
-  );
-      return res.status(200).send(user);
+    );
+    return res.status(200).send(user);
   } catch (error) {
     return res.status(400).json({ error });
   }
 };
 const nearBy = async (req, res) => {
-  const body  = req.body.data;
+  const body = req.body.data;
   let userPrefrence;
   try {
-    let pref = await preference.find({userId: body._id});
+    let pref = await preference.find({ userId: body._id });
     userPrefrence = pref[0]._doc;
     console.log(userPrefrence)
-    const user = await userProfiles.find({ city: body.city,
+    const user = await userProfiles.find({
+      city: body.city,
       $or: [
-        { age:userPrefrence.age },
-        { religious:userPrefrence.religious },
-        { nationality:userPrefrence.otherNationalities },
-        {professional:userPrefrence.profession},
-        {religiousStatus:userPrefrence.religiousStatus},
-        {caste:userPrefrence.caste},
-        {clan:userPrefrence.clan},
-        {income:userPrefrence.monthlyIncome},
-        {montherTonque:userPrefrence.montherTonque},
-        {looks:userPrefrence.looks},
-        {complexion:userPrefrence.complexion},
-        {build:userPrefrence.build},
-        {nationality:userPrefrence.country},
-        {socialEconomic:userPrefrence.socioeconomicStatus},
-        {siblingsCountBrothers:userPrefrence.BrotherCount},
-        {siblingsCountSisters:userPrefrence.SisterCount},
+        { age: userPrefrence.age },
+        { religious: userPrefrence.religious },
+        { nationality: userPrefrence.otherNationalities },
+        { professional: userPrefrence.profession },
+        { religiousStatus: userPrefrence.religiousStatus },
+        { caste: userPrefrence.caste },
+        { clan: userPrefrence.clan },
+        { income: userPrefrence.monthlyIncome },
+        { montherTonque: userPrefrence.montherTonque },
+        { looks: userPrefrence.looks },
+        { complexion: userPrefrence.complexion },
+        { build: userPrefrence.build },
+        { nationality: userPrefrence.country },
+        { socialEconomic: userPrefrence.socioeconomicStatus },
+        { siblingsCountBrothers: userPrefrence.BrotherCount },
+        { siblingsCountSisters: userPrefrence.SisterCount },
       ],
     });
     return res.status(200).send(user);
@@ -121,7 +122,7 @@ const sentRequest = async (req, res) => {
     return res.status(400).json({ error });
   }
 };
-const getRequest = async (req,res)=>{
+const getRequest = async (req, res) => {
   const { rid } = req.body;
   try {
     let user = await userRequest.find();
@@ -132,8 +133,8 @@ const getRequest = async (req,res)=>{
     return res.status(400).json({ error });
   }
 }
-const deleteRequest = async (req,res)=>{
-  const id  = req.params.id;
+const deleteRequest = async (req, res) => {
+  const id = req.params.id;
   try {
     let user = await userRequest.findByIdAndDelete(id);
     console.log(user);
@@ -257,23 +258,25 @@ const findMatch = async (req, res) => {
 const search = async (req, res) => {
   // Extract the search query from the request body
   const { gender, max_age, min_age, country, userId, height,
-    martialstatus,province,
-   professional,
-   sect,city,
-   religious } = req.body;
-console.log(req.body);
+    martialstatus, province,
+    professional,
+    sect, city,
+    religious } = req.body;
+  console.log(req.body);
   // Use the find method to search for documents in the collection
   userProfiles.find(
     {
-  
+
       gender: gender,
       age: { $gte: parseInt(min_age), $lte: parseInt(max_age) },
-      nationality: country,
-      height,
-      status:martialstatus,province,
-     professional,
-     sect,city,
-     religious
+      nationality: country ? country : { $ne: null },
+        height:height?height:{ $ne: null },
+        status:martialstatus?martialstatus: { $ne: null },
+       
+       professional:professional?professional: { $ne: null },
+       sect:sect?sect: { $ne: null },
+       city:city?city:{ $ne: null },
+      religious: religious ? religious : { $ne: null },
     },
     (err, users) => {
       console.log(users);
@@ -285,30 +288,30 @@ console.log(req.body);
     }
   );
 };
-const latest = async (req,res)=>{
+const latest = async (req, res) => {
   const id = req.params.id;
   let userPrefrence;
-  let pref = await preference.find({userId: id});
+  let pref = await preference.find({ userId: id });
   userPrefrence = pref[0]._doc;
   console.log(userPrefrence)
   const user = await userProfiles.find({
     $or: [
-      { age:userPrefrence.age },
-      { religious:userPrefrence.religious },
-      { nationality:userPrefrence.otherNationalities },
-      {professional:userPrefrence.profession},
-      {religiousStatus:userPrefrence.religiousStatus},
-      {caste:userPrefrence.caste},
-      {clan:userPrefrence.clan},
-      {income:userPrefrence.monthlyIncome},
-      {montherTonque:userPrefrence.montherTonque},
-      {looks:userPrefrence.looks},
-      {complexion:userPrefrence.complexion},
-      {build:userPrefrence.build},
-      {nationality:userPrefrence.country},
-      {socialEconomic:userPrefrence.socioeconomicStatus},
-      {siblingsCountBrothers:userPrefrence.BrotherCount},
-      {siblingsCountSisters:userPrefrence.SisterCount},
+      { age: userPrefrence.age },
+      { religious: userPrefrence.religious },
+      { nationality: userPrefrence.otherNationalities },
+      { professional: userPrefrence.profession },
+      { religiousStatus: userPrefrence.religiousStatus },
+      { caste: userPrefrence.caste },
+      { clan: userPrefrence.clan },
+      { income: userPrefrence.monthlyIncome },
+      { montherTonque: userPrefrence.montherTonque },
+      { looks: userPrefrence.looks },
+      { complexion: userPrefrence.complexion },
+      { build: userPrefrence.build },
+      { nationality: userPrefrence.country },
+      { socialEconomic: userPrefrence.socioeconomicStatus },
+      { siblingsCountBrothers: userPrefrence.BrotherCount },
+      { siblingsCountSisters: userPrefrence.SisterCount },
     ],
   });
   console.log(user);
@@ -317,18 +320,18 @@ const latest = async (req,res)=>{
   //   return res.status(200).send(userProfile);
   // }else {
   //   const user = await userProfiles.find({ gender: "Male" }).sort({$natural:-1});
-    return res.status(200).send(user);
+  return res.status(200).send(user);
   // }
 };
 module.exports = {
   OnlineUser,
-  addToFav,latest,
+  addToFav, latest,
   sentRequest,
   viewRequest,
-  deleteRequest,getRequest,
+  deleteRequest, getRequest,
   viewFav,
   nearBy,
   findMatch,
-  viewAllRequest,viewAcceptRequest,
+  viewAllRequest, viewAcceptRequest,
   search,
 };

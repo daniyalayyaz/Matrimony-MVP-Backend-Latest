@@ -143,7 +143,7 @@ const Profilelogin = async (req, res, next) => {
         if (!user) {
             return res.status(401).send({error: "Invalid email or password"});
         }
-        if (user.active) {
+        if (user.resetToken) {
             return res.status(401).send({error: "Please verify your email first"});
         }
         const compare = await bcrypt.compare(password, user.password);
@@ -182,7 +182,7 @@ const confirmEmail = async (req, res) => {
             return res.status(422).json({error: "Try again session expired"});
 
         user.resetToken = "";
-        user.active = false;
+ 
         await user.save();
         res.json({message: "Email Approved"});
     } catch (err) {

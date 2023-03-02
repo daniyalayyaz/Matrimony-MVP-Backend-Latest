@@ -143,7 +143,7 @@ const Profilelogin = async (req, res, next) => {
         if (!user) {
             return res.status(401).send({error: "Invalid email or password"});
         }
-        if (!user.active) {
+        if (user.active) {
             return res.status(401).send({error: "Please verify your email first"});
         }
         const compare = await bcrypt.compare(password, user.password);

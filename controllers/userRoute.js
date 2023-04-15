@@ -10,6 +10,30 @@ const nodemailer = require("nodemailer");
 const {gallery} = require("../models/gallery");
 let router = express.Router();
 
+
+const getUserProfile = async (email) => {
+    // Find the user profile in the database based on the email and password
+    const userProfile = await userProfiles.findOne({ email: email });
+  
+    // If the user profile doesn't exist, return null
+    if (!userProfile) {
+      return null;
+    }
+  
+    // If the user profile exists, return an object with the boolean values for each step
+    return {
+      step1: userProfile.step1 || false,
+      step2: userProfile.step2 || false,
+      step3: userProfile.step3 || false,
+      step4: userProfile.step4 || false,
+      step5: userProfile.step5 || false,
+      step6: userProfile.step6 || false,
+      step7: userProfile.step7 || false,
+      step8: userProfile.step8 || false,
+    };
+  };
+  
+
 const createProfile = async (req, res, next) => {
     try {
 
@@ -18,18 +42,25 @@ const createProfile = async (req, res, next) => {
             return res.status(500).send({error:"Email is required."});
 
         }
-       else if(!req.body.profileCreated){
-            return res.status(500).send({error:"Profile Created For is not selected."});
+    //    else if(!req.body.profileCreated){
+    //         return res.status(500).send({error:"Profile Created For is not selected."});
 
-        }
-       else if(!req.body.gender){
-            return res.status(500).send({error:"Gender is required."});
+    //     }
+    //    else if(!req.body.gender){
+    //         return res.status(500).send({error:"Gender is required."});
 
-        }
-        let emailcheck=await userProfiles.findOne({email:req.body.email});
-        if(emailcheck){
-            return res.status(500).send({error:"Email already regsiter please use another email"});
-        }
+    //     }
+       // Check if the email and password match an existing user profile in the database
+       const email = req.body.email;
+       const password = req.body.password;
+       const existingUser = await userProfiles.findOne({ email: email });
+
+       if (existingUser) {
+         const booleanValues = await getUserProfile(email);
+         const userId = existingUser._id;
+         return res.send({ id: userId, ...booleanValues });
+       }
+   
         crypto.randomBytes(32, async (err, buffer) => {
             if (err) {
                 console.log(err);
@@ -39,8 +70,8 @@ const createProfile = async (req, res, next) => {
             let user = await new userProfiles(req.body);
             user.resetToken = tokens;
             // user.active = false;
-            var randomstring = Math.random().toString(36).slice(-8);
-            user.password = randomstring;
+            // var randomstring = Math.random().toString(36).slice(-8);
+            // user.password = randomstring;
             if (!user) {
                 console.log("user is not created");
             }
@@ -61,16 +92,31 @@ const createProfile = async (req, res, next) => {
             });
 
             // send mail with defined transport object
-            const info = await transporter.sendMail({
-                from: "beautypalmist@gmail.com",
-                to: user.email, // list of receivers
-                subject: `Confirm Your Email`, // Subject line
-
-                html: `
-    <p>You requested for Create Account</p>
-    <h5>Your Email is ${req.body.email} and Password is ${randomstring} click in this <a href='http://localhost:4200/verify/${tokens}'>link</a> to active Your Account if you dont sent request to Create account then iqnore this message</h5>
-    `,
-            });
+         
+            const infoPromise = new Promise((resolve, reject) => {
+                transporter.sendMail({
+                    from: "beautypalmist@gmail.com",
+                    to: user.email, // list of receivers
+                    subject: `Confirm Your Email`, // Subject line
+    
+                    html: `
+        <p>You requested for Create Account</p>
+        <h5>Your Email is ${req.body.email} and Password is ${req.body.password} click in this <a href='http://localhost:4200/verify/${tokens}'>link</a> to active Your Account if you dont sent request to Create account then iqnore this message</h5>
+        `,
+                }, (error, info) => {
+                  if (error) {
+                    reject(error);
+                  } else {
+                    resolve(info);
+                  }
+                });
+              });
+              
+              infoPromise.then((result) => {
+                console.log(`Message sent to ${result.envelope.to}`);
+              }).catch((error) => {
+                console.error(`Error sending message: ${error}`);
+              });
             return res.send(datatosent);
         })
     } catch (e) {
@@ -120,6 +166,7 @@ const update = async (req, res, next) => {
         console.log(req.body);
         let user = await userProfiles.findByIdAndUpdate(id, req.body);
         if (!user) {
+            return res.send({message: "User Not Found"})
         }
 
         return res.send(user);
@@ -130,46 +177,69 @@ const update = async (req, res, next) => {
 };
 const Profilelogin = async (req, res, next) => {
     try {
-        const email = req.body.email;
-        const password = req.body.password;
-        console.log(req.body.password);
-        if (!email || !password) {
-            return res.status(400).send({error: "Email and password are required"});
-        }
-
-        const user = await userProfiles.findOne({email: email});
-        console.log(user);
-      
-        if (!user) {
-            return res.status(401).send({error: "Invalid email or password"});
-        }
-        if (user.resetToken) {
-            return res.status(401).send({error: "Please verify your email first"});
-        }
-        const compare = await bcrypt.compare(password, user.password);
-        if(!compare){
-           
-            return res.status(401).send({error: "Invalid password"});
-        }
-        if(user.active == false || user.approve == false){
-            return res.status(401).send({error:"Your account is disabled. Please contact Admin."});
-        }
-        if(user.requestToDelete == false){
-            return res.status(401).send({error:"Your account has been deleted!"});
-        }
+      const email = req.body.email;
+      const password = req.body.password;
+      console.log("passowrd:" , req.body.password);
+      if (!email || !password) {
+        return res.status(400).send({ error: "Email and password are required" });
+      }
+  
+      const user = await userProfiles.findOne({ email: email });
+    //   console.log("users:",user);
+  
+      if (!user) {
+        return res.status(401).send({ error: "Invalid email or password" });
+      }
+      if (user.resetToken) {
+        return res.status(401).send({ error: "Please verify your email first" });
+      }
+    //   const compare = await bcrypt.compare(password, user.password);
+    //   if (!compare) {
+    //     return res.status(401).send({ error: "Invalid password" });
+    //   }
+      if (user.active == false || user.approve == false) {
+        return res.status(401).send({ error: "Your account is disabled. Please contact Admin." });
+      }
+      if (user.requestToDelete == false) {
+        return res.status(401).send({ error: "Your account has been deleted!" });
+      }
+  
+      const step1 = user.step1 || false;
+      const step2 = user.step2 || false;
+      const step3 = user.step3 || false;
+      const step4 = user.step4 || false;
+      const step5 = user.step5 || false;
+      const step6 = user.step6 || false;
+      const step7 = user.step7 || false;
+  
+      if (step1 && step2 && step3 && step4 && step5 && step6 && step7) {
         await userProfiles.findOneAndUpdate(
-            {_id: user._id},
-            {$set: {LoginStatus: true}}
+          { _id: user._id },
+          { $set: { LoginStatus: true } }
         );
         return res.status(200).send({
-            message: "Login Successful",
-            id: user._id,
-            user: user,
+          message: "Login Successful",
+          id: user._id,
+          user: user,
         });
+      } else {
+        return res.status(200).send({
+          message: "Your Data Is Missing Kindly Fill First",
+          id: user._id,
+          step1: step1,
+          step2: step2,
+          step3: step3,
+          step4: step4,
+          step5: step5,
+          step6: step6,
+          step7: step7,
+        });
+      }
     } catch (error) {
-        return res;
+      return res;
     }
-};
+  };
+  
 
 const confirmEmail = async (req, res) => {
     try {
@@ -481,7 +551,7 @@ const getallUsers = async (req, res, next) => {
     }
 };
 const userUpdate = async (req, res, next) => {
-    console.log(req)
+    // console.log("updateuser:" , req)
     const body = req.body;
     console.log(body);
     let userUpdate;
